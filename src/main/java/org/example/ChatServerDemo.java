@@ -7,6 +7,7 @@ import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
@@ -66,24 +67,41 @@ public class ChatServerDemo implements IObserverable {
         }
     }
 
-    private void sendRandomMessages(){
-        String[] messages = {"Hej!", "Ha' en god dag!", "Jeg kan lide gulerødder", "#Datamatikerlyfe", "Ja da", "Hvad er klokken?", "Hvornår har vi fri?", "Hent lige en monner til mig"};
-        int randomDelay = random.nextInt(7000);
+    private void sendRandomMessages() {
+        String[] messages = {"Hej!", "Ha' en god dag!", "Jeg kan lide bananer", "#Datamatikerlyfe", "Ja da", "Hvad er klokken?", "Hvad tid har vi fri?", "Hent lige en monner til mig"};
+        int randomDelay = random.nextInt(5000) + 15000;
+
         while (true) {
             try {
-                Thread.sleep((randomDelay) + 10000);
+                Thread.sleep((randomDelay));
                 synchronized (clients) {
-                    if(!clients.isEmpty()){
+                    if (!clients.isEmpty()) {
                         ClientHandler randomClient = clients.get(random.nextInt(clients.size()));
                         String randomMessage = messages[random.nextInt(messages.length)];
-                        randomClient.notify("Anonym bruger skriver:  " + randomMessage);
+                        broadcast(randomClient.getName() + " skriver random: " + randomMessage);
                     }
                 }
-        } catch (InterruptedException e) {
+            } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
         }
+
+        /* new Thread(() -> {
+            try {
+                Thread.sleep(randomDelay);
+                synchronized (clients) {
+                    if (!clients.isEmpty()) {
+                        ClientHandler randomClient = clients.get(random.nextInt(clients.size()));
+                        randomClient.notify(randomClient.getName() + " skriver random: " + randomMessage);
+                    }
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }).start();
+        */
     }
+
 
 
     private static class ClientHandler implements Runnable, IObserver {
@@ -102,8 +120,7 @@ public class ChatServerDemo implements IObserverable {
             in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
         }
 
-        @Override
-        public String toString(){
+        public String getName(){
             return name;
         }
 
@@ -119,40 +136,88 @@ public class ChatServerDemo implements IObserverable {
             List<ClientHandler> clients = ((ChatServerDemo)server).getClients();
            try {
                while ((msg = in.readLine()) != null) {
-//                   System.out.println(msg);
-                   if(msg.startsWith("#JOIN")){
+                   if (msg.startsWith("#JOIN")) {
                        this.name = msg.split(" ")[1];
-                       server.broadcast("A new person joined the chat server. Welcome to: " + name);
-                   }else if (msg.startsWith("#MESSAGE")){
-                       server.broadcast(name + " says to everyone: " + msg.replace("#MESSAGE", ""));
-                   } else if (msg.startsWith("#LEAVE")){
+                       server.broadcast(name + " has joined the server.");
+                   } else if (msg.startsWith("#MESSAGE")) {
+                       server.broadcast(name + " says: " + msg.replace("#MESSAGE", ""));
+                   } else if (msg.startsWith("#LEAVE")) {
                        server.broadcast(name + " left the chat server");
                        break;
-                   } else if (msg.startsWith("#USERS")){
+                   } else if (msg.startsWith("#GETLIST")) {
                        for (ClientHandler ch : clients) {
-                           out.println(ch.toString() + " is connected to the server");
+                           out.println(ch.getName() + " is connected to the server");
                        }
-                   } else if(msg.startsWith("#PRIVATE")) {
+                   } else if (msg.startsWith("#PRIVATESUBLIST")) {
+                       String[] parts = msg.split(" ", 2);
+
+                       if (parts.length < 2) {
+                           out.println("400 Bad Request");
+                           out.println("Correct request is: #PRIVATESUBLIST <name>, <name>, <...>, <message>");
+                       }
+
+                       int lastIndex = parts[1].lastIndexOf(",");
+                       if (lastIndex == -1) {
+                           out.println("400 Bad Request: Missing names or message");
+                       }
+
+                       String targetNames = parts[1].substring(0, lastIndex);
+                       String targetMessage = parts[1].substring(lastIndex + 1).trim();
+
+                       String[] targets = targetNames.split("\\s*, \\s*");
+
+                       List<String> targetList = new ArrayList<>();
+                       for (String target : targets) {
+                           targetList.add(target.trim().toLowerCase());
+                       }
+
+                       for (ClientHandler ch : clients) {
+                           boolean found = false;
+                           if (targetList.contains(ch.getName().toLowerCase())) {
+                               out.println("You whisper to group: " + targetMessage);
+                               ch.notify(name + " whispers to group: " + targetMessage);
+                               found = true;
+                           }
+                           if (!found) {
+                               out.println("400 Bad Request: None of the specified users found");
+                           }
+                       }
+                   } else if (msg.startsWith("#PRIVATE")) {
                        String[] parts = msg.split(" ", 3); // Deler op i #PRIVATE, modtager, besked
+
+                       if (parts.length < 3) {
+                           out.println("400 Bad Request: Missing names or message");
+                           out.println("Correct Request is: #PRIVATE <name> <message>");
+                       }
+
                        String targetClientName = parts[1];
                        String privateMsg = parts[2];
                        boolean found = false;
 
-                       synchronized (clients){
+                       synchronized (clients) {
                            for (ClientHandler ch : clients) {
-                               if (ch.name.equalsIgnoreCase(targetClientName)){
-                                   ch.notify(name + " hvisker '" + privateMsg + "' til dig");
+                               if (ch.name.equalsIgnoreCase(targetClientName)) {
+                                   ch.notify(name + " whispers privately: " + privateMsg);
                                    found = true;
-                                   out.println(name + " hvisker '" + privateMsg + "' til " + targetClientName);
+                                   out.println(name + " whispers privately '" + privateMsg + "' to " + targetClientName);
                                    break;
                                }
                            }
                        }
-                       if (!found){
+                       if (!found) {
                            out.println("400 Bad Request");
                            out.println("Client with name '" + targetClientName + "' not found");
                            out.println("Syntaxen er: #PRIVATE <name> <message>");
                        }
+                   } else if (msg.startsWith("#HELP")) {
+                       out.println("Available commands:");
+                       out.println("#JOIN <name>");
+                       out.println("#MESSAGE <message>");
+                       out.println("#LEAVE");
+                       out.println("#GETLIST");
+                       out.println("#PRIVATE <name> <message>");
+                       out.println("#PRIVATESUBLIST <name>, <name>, <name>, <...>, <message>");
+                       out.println("#SHUTDOWN");
                    } else if (msg.startsWith("#SHUTDOWN")) {
                        out.println("Shutting down the chat server...");
                        synchronized (clients) {
@@ -170,7 +235,8 @@ public class ChatServerDemo implements IObserverable {
                }
            } catch (IOException e) {
                e.printStackTrace();
-           } finally {
+           }
+           /*finally {
                try {
                    clientSocket.close();
                } catch (IOException e) {
@@ -178,6 +244,7 @@ public class ChatServerDemo implements IObserverable {
                }
                ((ChatServerDemo)server).removeClient(this);
            }
+            */
         }
 
         private void closeConnection() {
