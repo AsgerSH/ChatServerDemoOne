@@ -30,7 +30,7 @@ public class ChatServerDemo implements IObserverable {
 
     }
 
-    public List<ClientHandler> getClients() {
+    private List<ClientHandler> getClients() {
         return clients;
     }
 
@@ -109,12 +109,12 @@ public class ChatServerDemo implements IObserverable {
 
     private static class ClientHandler implements Runnable, IObserver {
 
-        private Socket clientSocket;
-        private PrintWriter out;
-        private BufferedReader in;
-        private IObserverable server;
+        private final Socket clientSocket;
+        private final PrintWriter out;
+        private final BufferedReader in;
+        private final IObserverable server;
         private String name;
-        private List<String> BANNED_WORDS = Arrays.asList("fuck", "lort", "din mor", "luder");
+        private final List<String> BANNED_WORDS = Arrays.asList("fuck", "lort", "din mor", "luder");
         private int warningCount;
 
         public ClientHandler(Socket socket, IObserverable server) throws IOException {
@@ -145,7 +145,11 @@ public class ChatServerDemo implements IObserverable {
                 for (String word : BANNED_WORDS) {
                     String wordLowerCase = word.toLowerCase();
                     if (messageToLowerCase.contains(wordLowerCase)) {
-                        message = message.replaceAll("(?i)\\b" + Pattern.quote(word) + "\\b", "**");
+                        String replacement = "";
+                        for (int i = 0; i < word.length(); i++) {
+                            replacement += "*";
+                        }
+                        message = message.replaceAll("(?i)\\b" + Pattern.quote(word) + "\\b", replacement);
                     warningCount++;
                     notify("You have received a warning. You have " + warningCount + " warnings.");
 
@@ -176,8 +180,12 @@ public class ChatServerDemo implements IObserverable {
             try {
                 while ((msg = in.readLine()) != null) {
                     if (msg.startsWith("#JOIN")) {
-                        this.name = msg.split(" ")[1];
-                        server.broadcast(name + " has joined the server.");
+                        if(msg.split(" ").length == 1){
+                            notify("You haven't entered a name. Try again");
+                        } else {
+                            this.name = msg.split(" ")[1];
+                            server.broadcast(name + " has joined the server.");
+                        }
                     } else if (msg.startsWith("#ADDBADWORD")) {
                         String word = msg.split(" ")[1];
                         addBannedWord(word);
