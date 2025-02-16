@@ -9,7 +9,8 @@ public class WhisperStrategy implements IMessageStrategy {
         String name = parts[0];
         String message = parts[1];
         client.directMessage(name, client.filterMessage(message));
-        client.notify("You whisper to " + name + ": " + client.filterMessage(message));
+        String coloredName = client.colorText(name, "34");
+        client.notify("You whisper to " + coloredName + ": " + client.filterMessage(message));
     }
 }
 

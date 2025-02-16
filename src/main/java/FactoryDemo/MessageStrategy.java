@@ -3,6 +3,7 @@ package FactoryDemo;
 public class MessageStrategy implements IMessageStrategy {
     @Override
     public void execute(String message, ClientHandler client) {
-    client.getServer().broadcast(client.getName() + ": " + client.filterMessage(message));
+        String coloredName = client.colorText(client.getName(), "34");
+    client.getServer().broadcast(coloredName + ": " + client.filterMessage(message));
     }
 }

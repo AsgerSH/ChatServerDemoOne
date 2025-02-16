@@ -14,6 +14,7 @@ public class MessageStrategyFactory {
         strategies.put("#HELP", new HelpStrategy());
         strategies.put("#LEAVE", new LeaveStrategy());
         strategies.put("#SHUTDOWN", new ShutdownStrategy());
+        strategies.put("#BANNEDWORDS", new BannedWordListStrategy());
     }
 
     public static IMessageStrategy getStrategy(String strategy) {
