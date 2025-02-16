@@ -1,5 +1,7 @@
 package FactoryDemo;
 
+import com.sun.security.jgss.GSSUtil;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -19,7 +21,6 @@ public class ClientHandler implements Runnable, IObserver {
     private String name;
     private final List<String> BANNED_WORDS = Arrays.asList("fuck", "lort", "din mor", "luder");
     private int warningCount;
-    private final List<ClientHandler> clients = new ArrayList<>();
 
     public ClientHandler(Socket socket, IObserverable server) throws IOException {
         this.clientSocket = socket;
@@ -46,7 +47,8 @@ public class ClientHandler implements Runnable, IObserver {
 
 
     public String filterMessage(String message) {
-        String messageToLowerCase = message.toLowerCase();
+        String messageToLowerCase;
+        messageToLowerCase = message.toLowerCase();
         for (String word : BANNED_WORDS) {
             String wordLowerCase = word.toLowerCase();
             if (messageToLowerCase.contains(wordLowerCase)) {
@@ -68,6 +70,7 @@ public class ClientHandler implements Runnable, IObserver {
         return message;
     }
 
+    @Override
     public String getName() {
         return name;
     }
@@ -80,22 +83,19 @@ public class ClientHandler implements Runnable, IObserver {
 
     @Override
     public void notify(String msg) {
-//            System.out.println(msg);
         out.println(msg);
     }
 
-    private List<ClientHandler> getClients() {
-        return clients;
-    }
-
-    public void directMessage(String name, String msg){
-        for(IObserver obs: clients){
-            ClientHandler ch = (ClientHandler) obs;
-            if(ch.name.equals(name)){
-                ch.notify(this.name+": "+msg);
+    public void directMessage(String name, String message){
+        for(IObserver obs: getServer().getClients()){
+            if(obs.getName().contains(name)){
+                obs.notify(this.name+" whispers: " + message);
+                break;
             }
         }
     }
+
+
 
 
     @Override
@@ -250,4 +250,14 @@ public class ClientHandler implements Runnable, IObserver {
         return (ChatServerDemo) server;
     }
 
+public void removeClient(IObserver obs) {
+       try {
+           out.close();
+           in.close();
+           clientSocket.close();
+           ((ChatServerDemo) obs).removeClient(this);
+       } catch (IOException e) {
+           throw new RuntimeException(e);
+       }
+}
 }

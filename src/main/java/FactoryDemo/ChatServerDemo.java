@@ -1,22 +1,13 @@
 package FactoryDemo;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-/**
- * Purpose:
- *
- * @author: Thomas Hartmann
- */
 public class ChatServerDemo implements IObserverable{
 
     private List<IObserver> clients = new ArrayList<>();
@@ -66,8 +57,8 @@ public class ChatServerDemo implements IObserverable{
     @Override
     public void broadcast(String msg){
         // TODO: Implement method
-        for(IObserver observer : clients){
-            observer.notify(msg);
+        for(IObserver obs : clients){
+            obs.notify(msg);
         }
     }
 
