@@ -14,8 +14,9 @@ public class JoinStrategy implements IMessageStrategy {
         client.setName(name);
 
         String coloredName = client.colorText(client.getName(), "34");
+        String coloredMessage = client.colorText(" has connected to the server.", "32");
 
-        client.getServer().broadcast("Welcome to: " + coloredName);
+        client.getServer().broadcast(coloredName + coloredMessage);
         client.notify("Please check #HELP for commands. 3 bad words = server kick.");
     }
 }
