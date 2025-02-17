@@ -169,7 +169,6 @@ public class ChatServerDemo implements IObserverable {
 
         @Override
         public void notify(String msg) {
-//            System.out.println(msg);
             out.println(msg);
         }
 

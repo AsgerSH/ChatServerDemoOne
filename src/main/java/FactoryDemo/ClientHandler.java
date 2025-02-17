@@ -1,13 +1,10 @@
 package FactoryDemo;
 
-import com.sun.security.jgss.GSSUtil;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -30,6 +27,7 @@ public class ClientHandler implements Runnable, IObserver {
 
         out = new PrintWriter(clientSocket.getOutputStream(), true);
         in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+      notify("Welcome to the server. Please type '#JOIN <name>' to state your name.");
     }
 
     public void addBannedWord(String word) {
@@ -93,10 +91,12 @@ public class ClientHandler implements Runnable, IObserver {
     }
 
     public void directMessage(String name, String message) {
+        String coloredText = colorText(" whispers: ", "35");
+        String coloredMessage = colorText(message, "33");
         for (IObserver obs : getServer().getClients()) {
             if (obs.getName().contains(name)) {
                 String coloredName = colorText(this.name, "34");
-                obs.notify(coloredName + " whispers: " + message);
+                obs.notify(coloredName + coloredText + coloredMessage);
                 break;
             }
         }

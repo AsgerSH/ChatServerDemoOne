@@ -10,7 +10,13 @@ public class WhisperStrategy implements IMessageStrategy {
         String message = parts[1];
         client.directMessage(name, client.filterMessage(message));
         String coloredName = client.colorText(name, "34");
-        client.notify("You whisper to " + coloredName + ": " + client.filterMessage(message));
+        String coloredText = client.colorText("You whisper to ", "35");
+        String coloredText2 = client.colorText(": ", "35");
+
+        String newMessage = client.filterMessage(message);
+        String coloredNewMessage = client.colorText(newMessage, "33");
+
+        client.notify(coloredText + coloredName + coloredText2 + coloredNewMessage);
     }
 }
 
@@ -18,6 +24,7 @@ public class WhisperStrategy implements IMessageStrategy {
         /*String[] parts = message.split(" ", 2);
 
         if (parts.length < 2) {
+
             client.notify("Wrong request, try: #PRIVATE <target> <message>");
             return;
         }

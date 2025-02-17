@@ -12,9 +12,12 @@ public class GroupStrategy implements IMessageStrategy {
         String[] names = parts[0].split(",");
         String message = parts.length > 1 ? parts[1] : "";
 
+        String coloredMessage = client.colorText("You whisper to group: ", "35");
+        String coloredMessage2 = client.colorText(client.filterMessage(message), "33");
+
         Arrays.stream(names).forEach((name) -> client.directMessage(name, client.filterMessage(message)));
 
-        client.notify("You whisper to group: " + client.filterMessage(message));
+        client.notify(coloredMessage + coloredMessage2);
 
 //        for (String name : names) {
 //            client.directMessage(name, message);
